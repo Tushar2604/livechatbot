@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LiveChat - Real-time Messaging App
+
+A real-time chat application built with Next.js, TypeScript, Convex, and Clerk.
+
+## Features
+
+- **Authentication** — Sign up/in with Clerk (email or social login)
+- **User Search** — Find and start conversations with other users
+- **Real-time DMs** — Instant messaging with Convex subscriptions
+- **Group Chat** — Create group conversations with multiple members
+- **Message Timestamps** — Smart formatting (today: time only, older: date + time)
+- **Typing Indicators** — See when someone is typing with animated dots
+- **Online/Offline Status** — Green dot for online users
+- **Unread Message Count** — Badge showing unread messages per conversation
+- **Message Reactions** — React with emojis (👍 ❤️ 😂 😮 😢)
+- **Delete Messages** — Soft delete your own messages
+- **Smart Auto-Scroll** — Auto-scroll on new messages, "New messages" button when scrolled up
+- **Empty States** — Helpful messages when there are no conversations, messages, or search results
+- **Loading States** — Skeleton loaders while data loads, error handling with retry
+- **Responsive Layout** — Desktop sidebar + chat, mobile full-screen views
+
+## Tech Stack
+
+- **Next.js 15** (App Router)
+- **TypeScript**
+- **Convex** (backend, database, real-time)
+- **Clerk** (authentication)
+- **Tailwind CSS** + **shadcn/ui**
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+
+- A [Convex](https://convex.dev) account
+- A [Clerk](https://clerk.com) account
+
+### Setup
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <your-repo-url>
+cd livechat
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up Clerk:
+   - Create a Clerk application at [clerk.com](https://clerk.com)
+   - Create a JWT template for Convex (named "convex")
+   - Copy the Issuer URL
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Set up Convex:
+   - Run `npx convex dev` and follow prompts to create a project
+   - Add `CLERK_JWT_ISSUER_DOMAIN` to Convex dashboard environment variables
 
-## Learn More
+5. Create `.env.local`:
+```
+NEXT_PUBLIC_CONVEX_URL=<your-convex-url>
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=<your-clerk-key>
+CLERK_SECRET_KEY=<your-clerk-secret>
+```
 
-To learn more about Next.js, take a look at the following resources:
+6. Run development servers:
+```bash
+npx convex dev   # Terminal 1
+npm run dev      # Terminal 2
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+7. Open [http://localhost:3000](http://localhost:3000)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+livechat/
+├── convex/              # Convex backend
+│   ├── schema.ts        # Database schema
+│   ├── auth.config.ts   # Clerk auth config
+│   ├── users.ts         # User management functions
+│   ├── conversations.ts # Conversation management
+│   ├── messages.ts      # Message CRUD + reactions
+│   └── typing.ts        # Typing indicators
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx   # Root layout with providers
+│   │   ├── page.tsx     # Landing/auth page
+│   │   └── chat/
+│   │       └── page.tsx # Main chat interface
+│   ├── components/
+│   │   ├── ConvexClientProvider.tsx
+│   │   ├── chat/
+│   │   │   ├── Sidebar.tsx
+│   │   │   ├── ChatArea.tsx
+│   │   │   ├── MessageBubble.tsx
+│   │   │   ├── MessageInput.tsx
+│   │   │   ├── TypingIndicator.tsx
+│   │   │   └── EmptyState.tsx
+│   │   └── ui/          # shadcn components
+│   ├── lib/
+│   │   ├── format.ts    # Timestamp formatting
+│   │   └── utils.ts     # Utility functions
+│   └── middleware.ts    # Clerk middleware
+└── package.json
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push to GitHub
+2. Import into [Vercel](https://vercel.com)
+3. Add environment variables in Vercel dashboard
+4. Deploy Convex to production: `npx convex deploy`
