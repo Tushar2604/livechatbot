@@ -1,6 +1,12 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+export const generateUploadUrl = mutation(async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    return await ctx.storage.generateUploadUrl();
+});
+
 export const send = mutation({
     args: {
         conversationId: v.id("conversations"),
@@ -27,6 +33,7 @@ export const send = mutation({
             conversationId: args.conversationId,
             senderId: currentUser._id,
             content: args.content,
+            messageType: "text",
             isDeleted: false,
         });
 
@@ -49,11 +56,58 @@ export const send = mutation({
     },
 });
 
+export const sendImage = mutation({
+    args: {
+        conversationId: v.id("conversations"),
+        storageId: v.id("_storage"),
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) throw new Error("Not authenticated");
+
+        const currentUser = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+
+        if (!currentUser) throw new Error("User not found");
+
+        const conversation = await ctx.db.get(args.conversationId);
+        if (!conversation) throw new Error("Conversation not found");
+        if (!conversation.participants.includes(currentUser._id)) {
+            throw new Error("Not a participant");
+        }
+
+        await ctx.db.insert("messages", {
+            conversationId: args.conversationId,
+            senderId: currentUser._id,
+            content: "📷 Photo",
+            messageType: "image",
+            imageId: args.storageId,
+            isDeleted: false,
+        });
+
+        await ctx.db.patch(args.conversationId, {
+            lastMessageTime: Date.now(),
+        });
+    },
+});
+
 export const list = query({
     args: { conversationId: v.id("conversations") },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) return [];
+
+        const currentUser = await ctx.db
+            .query("users")
+            .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+            .unique();
+
+        if (!currentUser) return [];
+
+        const conversation = await ctx.db.get(args.conversationId);
+        if (!conversation) return [];
 
         const messages = await ctx.db
             .query("messages")
@@ -63,13 +117,44 @@ export const list = query({
             .order("asc")
             .collect();
 
+        const otherParticipantIds = conversation.participants.filter(
+            (id) => id !== currentUser._id
+        );
+
+        const readStatuses = [];
+        for (const pId of otherParticipantIds) {
+            const rs = await ctx.db
+                .query("readStatus")
+                .withIndex("by_conversationId_userId", (q) =>
+                    q.eq("conversationId", args.conversationId).eq("userId", pId)
+                )
+                .unique();
+            if (rs) readStatuses.push(rs);
+        }
+
         const messagesWithSender = [];
         for (const msg of messages) {
             const sender = await ctx.db.get(msg.senderId);
+            let imageUrl: string | null = null;
+            if (msg.imageId) {
+                imageUrl = await ctx.storage.getUrl(msg.imageId);
+            }
+
+            const seenBy: string[] = [];
+            if (msg.senderId === currentUser._id) {
+                for (const rs of readStatuses) {
+                    if (rs.lastReadTime >= msg._creationTime) {
+                        seenBy.push(rs.userId);
+                    }
+                }
+            }
+
             messagesWithSender.push({
                 ...msg,
                 senderName: sender?.name ?? "Unknown",
                 senderImageUrl: sender?.imageUrl ?? "",
+                imageUrl,
+                seenBy,
             });
         }
 

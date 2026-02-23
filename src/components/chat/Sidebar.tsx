@@ -17,7 +17,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { formatTimestamp } from "@/lib/format";
+import { formatTimestamp, formatLastSeen } from "@/lib/format";
 import EmptyState from "./EmptyState";
 
 interface SidebarProps {
@@ -130,8 +130,8 @@ export default function Sidebar({
                                             key={user._id}
                                             onClick={() => toggleGroupMember(user._id)}
                                             className={`flex items-center gap-3 w-full p-2 rounded-lg transition-colors ${selectedGroupMembers.includes(user._id)
-                                                    ? "bg-indigo-600/20 border border-indigo-500/30"
-                                                    : "hover:bg-slate-800"
+                                                ? "bg-indigo-600/20 border border-indigo-500/30"
+                                                : "hover:bg-slate-800"
                                                 }`}
                                         >
                                             <Avatar className="w-8 h-8">
@@ -206,7 +206,7 @@ export default function Sidebar({
                                 <div className="text-left">
                                     <p className="text-sm font-medium text-white">{user.name}</p>
                                     <p className="text-xs text-slate-400">
-                                        {user.isOnline ? "Online" : "Offline"}
+                                        {user.isOnline ? "Online" : user.lastSeen ? `Last seen ${formatLastSeen(user.lastSeen)}` : "Offline"}
                                     </p>
                                 </div>
                             </button>
@@ -276,8 +276,8 @@ export default function Sidebar({
                                             key={conv._id}
                                             onClick={() => onSelectConversation(conv._id)}
                                             className={`flex items-center gap-3 w-full p-2.5 rounded-lg transition-all duration-150 ${selectedConversation === conv._id
-                                                    ? "bg-indigo-600/15 border border-indigo-500/20"
-                                                    : "hover:bg-slate-800/50"
+                                                ? "bg-indigo-600/15 border border-indigo-500/20"
+                                                : "hover:bg-slate-800/50"
                                                 }`}
                                         >
                                             <div className="relative flex-shrink-0">

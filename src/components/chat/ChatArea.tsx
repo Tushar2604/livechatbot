@@ -10,6 +10,7 @@ import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
 import TypingIndicator from "./TypingIndicator";
 import EmptyState from "./EmptyState";
+import { formatLastSeen } from "@/lib/format";
 
 interface ChatAreaProps {
     conversationId: Id<"conversations">;
@@ -135,7 +136,9 @@ export default function ChatArea({
                             ? `${memberCount} members`
                             : isOnline
                                 ? "Online"
-                                : "Offline"}
+                                : otherUsers[0]?.lastSeen
+                                    ? `Last seen ${formatLastSeen(otherUsers[0].lastSeen)}`
+                                    : "Offline"}
                     </p>
                 </div>
             </div>
@@ -174,6 +177,7 @@ export default function ChatArea({
                             message={msg}
                             isOwn={msg.senderId === currentUser?._id}
                             currentUserId={currentUser?._id}
+                            participantCount={conversation.participantDetails.length}
                         />
                     ))
                 )}

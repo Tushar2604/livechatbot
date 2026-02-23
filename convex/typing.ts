@@ -23,7 +23,7 @@ export const set = mutation({
             )
             .unique();
 
-        const expiresAt = Date.now() + 3000;
+        const expiresAt = Date.now()  ;
 
         if (existing) {
             await ctx.db.patch(existing._id, { expiresAt });

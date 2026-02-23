@@ -22,6 +22,8 @@ export default defineSchema({
     conversationId: v.id("conversations"),
     senderId: v.id("users"),
     content: v.string(),
+    messageType: v.optional(v.union(v.literal("text"), v.literal("image"))),
+    imageId: v.optional(v.id("_storage")),
     isDeleted: v.boolean(),
     reactions: v.optional(
       v.object({

@@ -26,10 +26,14 @@ interface MessageBubbleProps {
         senderName: string;
         senderImageUrl: string;
         isDeleted: boolean;
+        messageType?: string;
+        imageUrl?: string | null;
+        seenBy?: string[];
         reactions?: Record<string, Id<"users">[]>;
     };
     isOwn: boolean;
     currentUserId: Id<"users"> | undefined;
+    participantCount?: number;
 }
 
 const REACTION_KEYS = ["thumbsUp", "heart", "laugh", "wow", "sad"] as const;
@@ -45,8 +49,10 @@ export default function MessageBubble({
     message,
     isOwn,
     currentUserId,
+    participantCount,
 }: MessageBubbleProps) {
     const [showActions, setShowActions] = useState(false);
+    const [showLightbox, setShowLightbox] = useState(false);
     const removeMessage = useMutation(api.messages.remove);
     const reactToMessage = useMutation(api.messages.react);
 
@@ -82,6 +88,17 @@ export default function MessageBubble({
                         <p className="text-sm italic text-slate-500">
                             This message was deleted
                         </p>
+                    ) : message.messageType === "image" && message.imageUrl ? (
+                        <button
+                            onClick={() => setShowLightbox(true)}
+                            className="block"
+                        >
+                            <img
+                                src={message.imageUrl}
+                                alt="Shared photo"
+                                className="max-w-[240px] max-h-[300px] rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                            />
+                        </button>
                     ) : (
                         <p className="text-sm whitespace-pre-wrap break-words">
                             {message.content}
@@ -187,19 +204,61 @@ export default function MessageBubble({
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <p
-                                className={`text-xs text-slate-500 mt-1 ${isOwn ? "text-right" : "text-left"
+                            <div
+                                className={`flex items-center gap-1 mt-1 ${isOwn ? "justify-end" : "justify-start"
                                     }`}
                             >
-                                {formatTimestamp(message._creationTime)}
-                            </p>
+                                <span className="text-xs text-slate-500">
+                                    {formatTimestamp(message._creationTime)}
+                                </span>
+                                {isOwn && !message.isDeleted && (
+                                    <span className={`text-xs font-medium ${(message.seenBy?.length ?? 0) > 0
+                                            ? (message.seenBy?.length ?? 0) >= (participantCount ?? 1) - 1
+                                                ? "text-blue-400"
+                                                : "text-blue-400/60"
+                                            : "text-slate-500"
+                                        }`}>
+                                        {(message.seenBy?.length ?? 0) > 0 ? "✓✓" : "✓"}
+                                    </span>
+                                )}
+                            </div>
                         </TooltipTrigger>
                         <TooltipContent className="bg-slate-800 border-slate-700 text-white">
-                            <p>{new Date(message._creationTime).toLocaleString()}</p>
+                            <p>
+                                {new Date(message._creationTime).toLocaleString()}
+                                {isOwn && !message.isDeleted && (
+                                    (message.seenBy?.length ?? 0) > 0
+                                        ? " · Seen"
+                                        : " · Delivered"
+                                )}
+                            </p>
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
             </div>
+
+            {showLightbox && message.imageUrl && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                    onClick={() => setShowLightbox(false)}
+                >
+                    <button
+                        onClick={() => setShowLightbox(false)}
+                        className="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+                    <img
+                        src={message.imageUrl}
+                        alt="Shared photo"
+                        className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </div>
     );
 }
